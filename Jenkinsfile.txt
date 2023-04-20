@@ -1,0 +1,70 @@
+pipeline {
+
+    agent any
+	
+    tools {
+	
+        maven 'apache-maven-3.8.7' 
+    }
+    stages {
+	    
+        stage('code clone') {
+            steps { 
+			git branch: 'main', credentialsId: 'Git', url: 'https://github.com/anilkegarla/myrepo.git'
+			}
+			}
+      
+		stage('Unit testing') {  
+            steps {
+                sh 'mvn test'
+            }
+        }
+		stage('Integration testing'){
+            
+            steps{
+                
+                   sh 'mvn verify -DskipUnitTests'
+                    
+              }
+               
+        }
+		
+		
+        
+        stage('maven package') {
+            steps {
+                sh 'mvn clean install'
+            }
+        }
+		stage('Static code analysis'){
+            
+            steps {
+			
+			script{
+                
+          
+                    withSonarQubeEnv(credentialsId: 'sonar-api-key') {
+                        
+                        sh 'mvn clean package sonar:sonar'
+                  
+                  }
+                  }}}
+				  
+		stage('Quality Gates Status'){ 
+		
+           steps { 
+          
+		      waitForQualityGate abortPipeline: false, credentialsId: 'sonar-api-key'
+            
+			   
+
+        }}
+		
+
+     
+       
+
+		
+		
+    }
+}
